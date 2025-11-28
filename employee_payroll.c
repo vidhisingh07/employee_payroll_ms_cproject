@@ -14,6 +14,8 @@ int count = 0;
 struct Employee emp[100]; // max 100 employees
 
 // Function prototypes
+void loadFromFile();
+void saveToFile();
 void addEmployee();
 void displayEmployees();
 void calculateSalary();
@@ -24,6 +26,8 @@ void sortEmployeesBySalary();
 
 int main() {
     int choice;
+    loadFromFile();  // Load employees from file at start
+
     do {
         printf("\n--- Employee Payroll System ---\n");
         printf("1. Add Employee\n");
@@ -45,12 +49,37 @@ int main() {
             case 5: updateEmployee(); break;
             case 6: deleteEmployee(); break;
             case 7: sortEmployeesBySalary(); break;
-            case 8: printf("Exiting...\n"); break;
+            case 8: 
+                printf("Exiting...\n");
+                saveToFile();  // Save employees to file before exit
+                break;
             default: printf("Invalid choice!\n");
         }
     } while(choice != 8);
 
     return 0;
+}
+
+// --- File Handling Functions ---
+
+void loadFromFile() {
+    FILE *fp = fopen("employees.dat", "rb");
+    if(fp != NULL) {
+        while(fread(&emp[count], sizeof(struct Employee), 1, fp)) {
+            count++;
+        }
+        fclose(fp);
+    }
+}
+
+void saveToFile() {
+    FILE *fp = fopen("employees.dat", "wb");
+    if(fp != NULL) {
+        fwrite(emp, sizeof(struct Employee), count, fp);
+        fclose(fp);
+    } else {
+        printf("Error saving to file!\n");
+    }
 }
 
 // --- Function definitions ---
@@ -67,10 +96,15 @@ void addEmployee() {
     printf("Enter Hours Worked: ");
     scanf("%d", &emp[count].hoursWorked);
     count++;
+    saveToFile(); // save after adding
     printf("Employee added successfully!\n");
 }
 
 void displayEmployees() {
+    if(count == 0) {
+        printf("No employees to display.\n");
+        return;
+    }
     printf("\n--- Employee List ---\n");
     for(int i=0; i<count; i++) {
         printf("ID: %d | Name: %s | Designation: %s | Basic Salary: %.2f | Hours Worked: %d\n",
@@ -128,6 +162,7 @@ void updateEmployee() {
             scanf("%f", &emp[i].basicSalary);
             printf("Enter new Hours Worked: ");
             scanf("%d", &emp[i].hoursWorked);
+            saveToFile(); // save after updating
             printf("Employee updated successfully!\n");
             return;
         }
@@ -144,6 +179,7 @@ void deleteEmployee() {
             for(int j=i; j<count-1; j++)
                 emp[j] = emp[j+1];
             count--;
+            saveToFile(); // save after deletion
             printf("Employee deleted successfully!\n");
             return;
         }
@@ -152,6 +188,10 @@ void deleteEmployee() {
 }
 
 void sortEmployeesBySalary() {
+    if(count == 0) {
+        printf("No employees to sort.\n");
+        return;
+    }
     for(int i=0; i<count-1; i++) {
         for(int j=i+1; j<count; j++) {
             float salary_i = emp[i].basicSalary + (emp[i].hoursWorked > 40 ? (emp[i].hoursWorked-40)*100 : 0);
